@@ -1,0 +1,40 @@
+{
+    "name": "tokenman",
+    "version": "0.8.4",
+    "description": "Authorization tokens made easy",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "type": "module",
+    "scripts": {
+        "prepublish": "npm run build",
+        "build": "tsc",
+        "test": "tsc && node dist/test.js",
+        "start": "node dist/index.js"
+    },
+    "files": [
+        "/dist"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/varvolta/tokenman.git"
+    },
+    "keywords": [
+        "authorization",
+        "auth",
+        "api",
+        "token",
+        "tokens"
+    ],
+    "author": "Vahe Arzumanyan",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/varvolta/tokenman/issues"
+    },
+    "homepage": "https://github.com/varvolta/tokenman#readme",
+    "devDependencies": {
+        "@types/node": "^20.6.5",
+        "@typescript-eslint/eslint-plugin": "^6.7.2",
+        "@typescript-eslint/parser": "^6.7.2",
+        "eslint": "^8.50.0"
+    }
+}
