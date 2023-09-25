@@ -1,0 +1,1 @@
+export const DEFAULT_TOKEN_DURATION: number = 1000 * 60 * 60
