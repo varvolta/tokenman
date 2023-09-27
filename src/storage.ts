@@ -1,17 +1,17 @@
 import { resolve } from 'node:path'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 
-class Tokens {
+class Storage {
 
     static directory = resolve('storage')
     static file = resolve('storage', 'tokens.json')
 
-    static ensureFile() {
-        if (!existsSync(this.directory)) this.createDirectory()
-        if (!existsSync(this.file)) this.saveFile({})
+    static ensure() {
+        if (!existsSync(this.directory)) this.create()
+        if (!existsSync(this.file)) this.save({})
     }
 
-    static createDirectory() {
+    static create() {
         try {
             mkdirSync(this.directory)
         } catch (error) {
@@ -19,7 +19,7 @@ class Tokens {
         }
     }
 
-    static saveFile(object: object) {
+    static save(object: object) {
         try {
             writeFileSync(this.file, JSON.stringify(object))
         } catch (error) {
@@ -27,17 +27,17 @@ class Tokens {
         }
     }
 
-    static loadFile() {
-        this.ensureFile()
+    static load() {
+        this.ensure()
         const text = readFileSync(this.file, { encoding: 'utf8' })
         try {
             return JSON.parse(text)
         } catch (error) {
-            this.saveFile({})
+            this.save({})
             return {}
         }
     }
 
 }
 
-export default Tokens
+export default Storage

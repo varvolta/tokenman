@@ -1,5 +1,15 @@
 import Tokenman from './tokenman.js'
-const token = Tokenman.sign({ id: 1 }, '', { duration: 30 })
-const obj = Tokenman.verify(token, '')
+const token1 = Tokenman.sign({ id: 1 }, '', { duration: 30 })
+const obj1 = Tokenman.verify(token1, '')
 
-console.log(token, obj)
+console.log(token1, obj1)
+
+const token2 = Tokenman.sign({ id: 1 }, '', { duration: 30 })
+setTimeout(() => {
+    try {
+        const obj2 = Tokenman.verify(token2, '')
+        console.log(token2, obj2)
+    } catch (error) {
+        console.error(token2, error)
+    }
+}, 28)

@@ -1,6 +1,6 @@
 import { DEFAULT_TOKEN_DURATION } from './constants.js'
 import Crypter from './crypter.js'
-import Tokens from './tokens.js'
+import Storage from './storage.js'
 import { randomBytes } from 'node:crypto'
 
 interface SignOptions {
@@ -9,7 +9,7 @@ interface SignOptions {
 
 class Tokenman {
 
-    static #list = Tokens.loadFile()
+    static #list = Storage.load()
 
     static #generateToken(): string {
         const token = randomBytes(32).toString('hex')
@@ -25,41 +25,49 @@ class Tokenman {
         const token = this.#generateToken()
         this.#list[token] = {
             data: encrypted,
-            duration: options.duration
+            duration: options.duration,
+            created: Date.now()
         }
-        Tokens.saveFile(this.#list)
+        Storage.save(this.#list)
         return token
     }
 
     static verify(token: string, secret: string, callback?: Function) {
-        const payload = this.#list[token]
-        if (payload) {
-            let decrypted = Crypter.decrypt(payload.data, secret)
-            if (decrypted.length) {
-                try {
-                    decrypted = JSON.parse(decrypted)
-                } catch (error) {
-                    console.error(error)
-                }
-                if (callback) {
-                    callback(null, decrypted)
+        const item = this.#list[token]
+        let error, data
+        if (item) {
+            if (item.duration === 'forever' || item.created + item.duration > Date.now()) {
+                data = Crypter.decrypt(item.data, secret)
+                if (data.length) {
+                    try {
+                        data = JSON.parse(data)
+                    } catch (_error) {
+                        error = _error
+                    }
                 } else {
-                    return decrypted
+                    error = new Error('Wrong secret key.')
                 }
             } else {
-                if (callback) {
-                    callback(new Error('Wrong secret key.'), null)
-                } else {
-                    throw new Error('Wrong secret key.')
-                }
+                delete this.#list[token]
+                Storage.save(this.#list)
+                error = new Error('Token expired.')
             }
         } else {
-            if (callback) {
-                callback(new Error('Unexisting token.'), null)
-            } else {
-                throw new Error('Unexisting token.')
-            }
+            error = new Error('Unexisting token.')
         }
+        if (callback) {
+            callback(error, data)
+        } else {
+            if (error) throw error
+            return data
+        }
+    }
+
+    static delete(token: string) {
+        if (this.#list[token]) {
+            return delete this.#list[token]
+        }
+        return false
     }
 
 }
