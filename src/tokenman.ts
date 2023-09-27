@@ -9,63 +9,74 @@ interface SignOptions {
 
 class Tokenman {
 
-    static #list = Storage.load()
+    static #items = this.#filter(Storage.load())
 
     static #generateToken(): string {
         const token = randomBytes(32).toString('hex')
-        if (this.#list[token]) {
+        if (this.#items[token]) {
             return this.#generateToken()
         } else {
             return token
         }
     }
 
-    static sign(data: object, secret: string, options: SignOptions = { duration: DEFAULT_TOKEN_DURATION }, callback?: Function): string {
+    static #filter(object: object) {
+        return Object.fromEntries(Object.entries(object).filter(([, item]) => item.duration === 'forever' || item.created + item.duration > Date.now()))
+    }
+
+    static sign(data: object, secret: string, options: SignOptions = { duration: DEFAULT_TOKEN_DURATION }, callback?: (token: string) => void): string {
         const encrypted = Crypter.encrypt(JSON.stringify(data), secret)
         const token = this.#generateToken()
-        this.#list[token] = {
+
+        this.#items[token] = {
             data: encrypted,
             duration: options.duration,
             created: Date.now()
         }
-        Storage.save(this.#list)
+
+        Storage.save(this.#items)
+
+        if (callback) callback(token)
         return token
     }
 
-    static verify(token: string, secret: string, callback?: Function) {
-        const item = this.#list[token]
-        let error, data
+    static verify(token: string, secret: string, callback?: (error: Error | null, data: object | null) => void): object | null {
+        this.#items = this.#filter(this.#items)
+        Storage.save(this.#items)
+
+        const item = this.#items[token]
+
+        let error: Error | null = null, data: object | null = null
+
         if (item) {
-            if (item.duration === 'forever' || item.created + item.duration > Date.now()) {
-                data = Crypter.decrypt(item.data, secret)
-                if (data.length) {
-                    try {
-                        data = JSON.parse(data)
-                    } catch (_error) {
-                        error = _error
-                    }
-                } else {
-                    error = new Error('Wrong secret key.')
+            const decrypted = Crypter.decrypt(item.data, secret)
+            if (decrypted.length) {
+                try {
+                    data = JSON.parse(decrypted)
+                } catch (_error) {
+                    error = _error as Error
                 }
             } else {
-                delete this.#list[token]
-                Storage.save(this.#list)
-                error = new Error('Token expired.')
+                error = new Error('Wrong secret key.')
             }
         } else {
-            error = new Error('Unexisting token.')
+            error = new Error('Unexisting or expired token.')
         }
+
         if (callback) {
             callback(error, data)
         } else {
             if (error) throw error
-            return data
         }
+
+        return data
     }
 
-    static delete(token: string) {
-        if (this.#list[token]) {
-            return delete this.#list[token]
+    static delete(token: string): boolean {
+        if (this.#items[token]) {
+            delete this.#items[token]
+            Storage.save(this.#items)
+            return true
         }
         return false
     }

@@ -15,7 +15,7 @@ class Storage {
         try {
             mkdirSync(this.directory)
         } catch (error) {
-            console.error(error)
+            throw error
         }
     }
 
@@ -23,7 +23,7 @@ class Storage {
         try {
             writeFileSync(this.file, JSON.stringify(object))
         } catch (error) {
-            console.error(error)
+            throw error
         }
     }
 
@@ -33,6 +33,7 @@ class Storage {
         try {
             return JSON.parse(text)
         } catch (error) {
+            console.error(error)
             this.save({})
             return {}
         }
